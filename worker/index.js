@@ -52,11 +52,9 @@ async function createCheckout(request, env) {
     phone_number_collection: { enabled: true },
     automatic_tax: { enabled: true },
     billing_address_collection: 'required',
-    shipping_address_collection: { allowed_countries: Object.fromEntries(COUNTRIES.map((c, i) => [i, c])) },
     success_url: `${SITE}/?compra=ok#repuestos`,
     cancel_url: `${SITE}/?compra=cancelada#repuestos`,
     locale: 'es',
-    custom_text: { shipping_address: { message: 'El costo de envío se calcula y se confirma contigo después de la compra.' } },
     line_items: Object.fromEntries(lines.map(({ part, qty }, i) => [i, {
       quantity: qty,
       adjustable_quantity: { enabled: true, minimum: 1, maximum: 99 },
@@ -65,14 +63,20 @@ async function createCheckout(request, env) {
         unit_amount: Math.round(part.price * 100),
         product_data: {
           name: part.name,
-          description: `${part.line} · ${part.category}${part.pn ? ' · P/N ' + part.pn : ''}`,
-          metadata: { catalog_id: part.id, part_number: part.pn || '', line: part.line, category: part.category },
+          description: part.digital ? part.desc : `${part.line} · ${part.category}${part.pn ? ' · P/N ' + part.pn : ''}`,
+          metadata: { catalog_id: part.id, part_number: part.pn || '', line: part.line, category: part.category, digital: part.digital ? 'true' : 'false' },
         },
       },
     }])),
     metadata: { source: 'cognition-repuestos' },
   };
-  const ship = await shippingOptions(lines, env);
+  // Solo se pide dirección de envío si hay al menos un artículo físico (las gift cards son digitales).
+  const physical = lines.filter(l => !l.part.digital);
+  if (physical.length) {
+    params.shipping_address_collection = { allowed_countries: Object.fromEntries(COUNTRIES.map((c, i) => [i, c])) };
+    params.custom_text = { shipping_address: { message: 'El costo de envío se calcula y se confirma contigo después de la compra.' } };
+  }
+  const ship = physical.length ? await shippingOptions(physical, env) : [];
   if (ship.length) params.shipping_options = Object.fromEntries(ship.map((s, i) => [i, s]));
 
   const r = await fetch('https://api.stripe.com/v1/checkout/sessions', {

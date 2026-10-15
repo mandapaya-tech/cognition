@@ -1,0 +1,9 @@
+{
+  "name": "cognition",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-10-01",
+  "account_id": "eba2cb1f5cba687405149463c8f94383",
+  // public/ se genera con scripts/build.sh (solo archivos del sitio).
+  "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": ["/api/*"] },
+  "observability": { "enabled": true, "logs": { "enabled": true, "invocation_logs": true } }
+}

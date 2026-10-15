@@ -61,7 +61,9 @@ async function createCheckout(request, env) {
       price_data: {
         currency: 'usd',
         unit_amount: Math.round(part.price * 100),
-        product_data: {
+        // Precio siempre del servidor; se vincula al producto de Stripe si existe.
+        ...(part.stripe_product ? { product: part.stripe_product } : {}),
+        product_data: part.stripe_product ? undefined : {
           name: part.name,
           description: part.digital ? part.desc : `${part.line} · ${part.category}${part.pn ? ' · P/N ' + part.pn : ''}`,
           metadata: { catalog_id: part.id, part_number: part.pn || '', line: part.line, category: part.category, digital: part.digital ? 'true' : 'false' },

@@ -1,5 +1,7 @@
 // Worker de Cognition: sirve el sitio estático y expone POST /api/checkout.
 import catalog from '../repuestos.json';
+import { partnerCheckout, stripeWebhook, PartnerHub } from './partner.js';
+export { PartnerHub };
 
 const SITE = 'https://cognitionindustries.com';
 const BY_ID = new Map(catalog.filter(i => typeof i.price === 'number').map(i => [i.id, i]));
@@ -94,6 +96,14 @@ async function createCheckout(request, env) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (url.pathname === '/api/partner/giftcard/checkout') {
+      if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
+      return partnerCheckout(request, env);
+    }
+    if (url.pathname === '/api/stripe/webhook') {
+      if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
+      return stripeWebhook(request, env);
+    }
     if (url.pathname === '/api/checkout') {
       if (request.method !== 'POST') return json({ error: 'Método no permitido.' }, 405);
       return createCheckout(request, env);

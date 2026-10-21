@@ -107,6 +107,15 @@ export async function stripeWebhook(request, env) {
   if (!(await verifyStripe(raw, request.headers.get('stripe-signature'), env.STRIPE_WEBHOOK_SECRET))) return json({ error: 'bad_signature' }, 400);
   const ev = JSON.parse(raw);
   const o = ev.data?.object || {};
+  // Compras del sitio: asegurar que Stripe envíe el recibo al comprador.
+  if (ev.type === 'checkout.session.completed' && o.metadata?.source === 'cognition-repuestos') {
+    const email = o.customer_details?.email || o.customer_email;
+    if (o.payment_intent && email) {
+      const u = await stripe(env, 'POST', `payment_intents/${o.payment_intent}`, { receipt_email: email }, `receipt-${ev.id}`);
+      if (!u.ok) { console.log('receipt_email_error', u.data?.error?.code); return json({ error: 'retry' }, 500); }
+    }
+    return json({ received: true, receipt: !!email });
+  }
   let meta = o.metadata || {}, amount = null, currency = null, status = null, name = null;
   if (ev.type === 'checkout.session.completed' || ev.type === 'checkout.session.expired') {
     name = ev.type === 'checkout.session.completed' ? 'payment.completed' : 'checkout.expired';

@@ -73,6 +73,16 @@ async function createCheckout(request, env) {
       },
     }])),
     metadata: { source: 'cognition-repuestos' },
+    payment_intent_data: { metadata: { source: 'cognition-repuestos' } },
+    // Factura pagada en PDF + correo al comprador (además del recibo vía webhook).
+    invoice_creation: {
+      enabled: true,
+      invoice_data: {
+        description: 'Compra en cognitionindustries.com – Cognition Industries LLC',
+        footer: 'Cognition Industries LLC · 30 N Gould St Ste N, Sheridan, WY 82801, EE. UU. · WhatsApp +1 754 300 6570 · Gracias por tu compra.',
+        metadata: { source: 'cognition-repuestos' },
+      },
+    },
   };
   // Solo se pide dirección de envío si hay al menos un artículo físico (las gift cards son digitales).
   const physical = lines.filter(l => !l.part.digital);

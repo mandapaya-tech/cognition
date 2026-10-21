@@ -54,7 +54,7 @@ async function createCheckout(request, env) {
     phone_number_collection: { enabled: true },
     automatic_tax: { enabled: true },
     billing_address_collection: 'required',
-    success_url: `${SITE}/?compra=ok#repuestos`,
+    success_url: `${SITE}/compra-confirmada?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${SITE}/?compra=cancelada#repuestos`,
     locale: 'es',
     line_items: Object.fromEntries(lines.map(({ part, qty }, i) => [i, {
@@ -93,6 +93,32 @@ async function createCheckout(request, env) {
   return json({ url: data.url, id: data.id });
 }
 
+const maskEmail = e => {
+  if (!e || !e.includes('@')) return null;
+  const [u, d] = e.split('@');
+  return `${u.slice(0, 1)}${'*'.repeat(Math.max(2, Math.min(6, u.length - 1)))}@${d}`;
+};
+
+// Resumen seguro de una compra del sitio (solo sesiones creadas por /api/checkout).
+async function sessionSummary(url, env) {
+  const id = url.searchParams.get('id') || '';
+  if (!/^cs_(live|test)_[A-Za-z0-9]{10,200}$/.test(id)) return json({ error: 'not_found' }, 404);
+  if (!env.STRIPE_SECRET_KEY) return json({ error: 'unavailable' }, 503);
+  const r = await fetch(`https://api.stripe.com/v1/checkout/sessions/${id}?expand[]=line_items`, { headers: { authorization: `Bearer ${env.STRIPE_SECRET_KEY}` } });
+  if (!r.ok) return json({ error: 'not_found' }, 404);
+  const s = await r.json();
+  if (s.metadata?.source !== 'cognition-repuestos') return json({ error: 'not_found' }, 404);
+  return json({
+    order_ref: 'CI-' + id.slice(-8).toUpperCase(),
+    status: s.status, payment_status: s.payment_status, currency: s.currency,
+    amount_subtotal: s.amount_subtotal, amount_tax: s.total_details?.amount_tax ?? 0, amount_shipping: s.total_details?.amount_shipping ?? 0, amount_total: s.amount_total,
+    items: (s.line_items?.data || []).map(l => ({ name: l.description, qty: l.quantity, amount: l.amount_total })),
+    has_physical: !!s.shipping_address_collection,
+    email: maskEmail(s.customer_details?.email || s.customer_email),
+    created: s.created,
+  });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -103,6 +129,10 @@ export default {
     if (url.pathname === '/api/stripe/webhook') {
       if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
       return stripeWebhook(request, env);
+    }
+    if (url.pathname === '/api/checkout/session') {
+      if (request.method !== 'GET') return json({ error: 'Método no permitido.' }, 405);
+      return sessionSummary(url, env);
     }
     if (url.pathname === '/api/checkout') {
       if (request.method !== 'POST') return json({ error: 'Método no permitido.' }, 405);

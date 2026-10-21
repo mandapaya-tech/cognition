@@ -1,0 +1,20 @@
+'use strict';
+(()=>{const el=document.getElementById('co'),id=new URLSearchParams(location.search).get('session_id')||'';
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const money=(c,cur)=>(cur||'usd').toUpperCase()==='USD'?'US$ '+(c/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):(c/100).toFixed(2)+' '+String(cur).toUpperCase();
+const wa=ref=>'https://wa.me/17543006570?text='+encodeURIComponent(`Hola, tengo una consulta sobre mi compra ${ref||''}.`);
+const actions=ref=>`<div class="co-actions"><a class="button" href="/#repuestos">Volver al catálogo</a><a class="button alt" href="${wa(ref)}" target="_blank" rel="noopener noreferrer">Escribir por WhatsApp</a></div>`;
+const state=(badge,cls,title,text,ref)=>{el.innerHTML=`<p class="co-badge ${cls}">${badge}</p><h1>${title}</h1><p>${text}</p>${actions(ref)}`;};
+if(!/^cs_(live|test)_/.test(id)){state('SIN PEDIDO','err','No encontramos tu pedido','El enlace no es válido. Si ya pagaste, escríbenos por WhatsApp y lo revisamos.');return}
+fetch('/api/checkout/session?id='+encodeURIComponent(id)).then(r=>r.ok?r.json():Promise.reject(r.status)).then(s=>{
+ if(s.payment_status==='paid'||s.payment_status==='no_payment_required'){
+  try{localStorage.removeItem('cognition-carrito')}catch{}
+  const f=new Date(s.created*1000).toLocaleString('es-CO',{dateStyle:'long',timeStyle:'short'});
+  const items=s.items.map(i=>`<li><span>${esc(i.name)} <small>× ${i.qty}</small></span><b>${money(i.amount,s.currency)}</b></li>`).join('');
+  const tot=`<span>Subtotal</span><span>${money(s.amount_subtotal,s.currency)}</span><span>Impuesto</span><span>${money(s.amount_tax,s.currency)}</span>${s.has_physical?`<span>Envío</span><span>${s.amount_shipping?money(s.amount_shipping,s.currency):'Se confirma contigo'}</span>`:''}<span class="t">Total pagado</span><span class="t">${money(s.amount_total,s.currency)}</span>`;
+  const next=[s.has_physical?'Te contactaremos para confirmar el envío, el costo y el tiempo de entrega a tu dirección.':null,s.items.some(i=>/gift card/i.test(i.name))?'Las gift cards son digitales: no requieren envío y te las entregamos por correo o WhatsApp.':null,`Enviamos el recibo de pago a ${esc(s.email||'tu correo')}.`,'Guarda tu número de pedido para cualquier consulta.'].filter(Boolean).map(x=>`<li>${x}</li>`).join('');
+  el.innerHTML=`<p class="co-badge">PAGO APROBADO</p><h1>Compra aprobada</h1><p class="co-ref">Pedido <b>${esc(s.order_ref)}</b> · ${esc(f)}${s.email?' · '+esc(s.email):''}</p><ul class="co-items">${items}</ul><div class="co-totals">${tot}</div><div class="co-next"><h2>Próximos pasos</h2><ul>${next}</ul></div>${actions(s.order_ref)}`;
+ } else if(s.status==='expired') state('PEDIDO VENCIDO','warn','El pago no se completó','La sesión de pago venció sin cobro. Tu carrito sigue disponible para intentarlo de nuevo.',s.order_ref);
+ else if(s.status==='open') state('PAGO PENDIENTE','warn','Tu pago aún no se ha completado','No hemos recibido la confirmación del pago. Si ya pagaste, espera unos minutos y recarga esta página.',s.order_ref);
+ else state('PAGO EN PROCESO','warn','Estamos confirmando tu pago','Tu banco aún está procesando el pago. Te avisaremos cuando se confirme.',s.order_ref);
+}).catch(()=>state('ERROR','err','No pudimos cargar tu pedido','Intenta recargar la página. Si el problema continúa, escríbenos por WhatsApp.'));})();

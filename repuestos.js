@@ -8,6 +8,7 @@ const KEY='cognition-carrito';let data=[],byId=new Map(),cart={};
 try{cart=JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch{cart={}}
 const params=new URLSearchParams(location.search);
 if(params.get('compra')==='ok'){cart={};}
+if(params.get('compra')==='cancelada')setTimeout(()=>root.scrollIntoView({behavior:'smooth'}),300);
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(cart))}catch{}};
 const opts=(sel,vals,all)=>{sel.innerHTML=`<option value="">${all}</option>`+vals.map(v=>`<option>${esc(v)}</option>`).join('')};
 function render(){const t=q.value.trim().toLowerCase(),l=fl.value,c=fc.value;
@@ -28,6 +29,6 @@ root.addEventListener('click',async e=>{const a=e.target.closest('[data-add]'),d
 root.addEventListener('change',e=>{const t=e.target.closest('[data-qty]');if(!t)return;const n=Math.max(1,Math.min(99,Math.floor(+t.value)||1));cart[t.dataset.qty]=n;save();render();renderCart();});
 fetch('repuestos.json').then(r=>r.json()).then(d=>{data=d;byId=new Map(d.filter(i=>i.price!=null).map(i=>[i.id,i]));for(const id of Object.keys(cart))if(!byId.has(id))delete cart[id];save();
  opts(fl,[...new Set(d.map(i=>i.line))],'Todas las líneas');opts(fc,[...new Set(d.map(i=>i.category))].sort(),'Todas las categorías');render();
- renderCart(params.get('compra')==='ok'?'¡Gracias por tu compra! Te contactaremos para confirmar el envío.':params.get('compra')==='cancelada'?'El pago fue cancelado. Tu carrito sigue aquí.':'');})
+ renderCart(params.get('compra')==='ok'?'¡Gracias por tu compra! Te contactaremos para confirmar el envío.':params.get('compra')==='cancelada'?'Cancelaste el pago; no se hizo ningún cobro. Tu carrito sigue aquí para cuando quieras continuar.':'');})
  .catch(()=>{list.textContent='No pudimos cargar el catálogo. Escríbenos por WhatsApp.'});
 [q,fl,fc].forEach(e=>e.addEventListener('input',render));})();

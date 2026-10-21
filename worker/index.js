@@ -7,6 +7,7 @@ const SITE = 'https://cognitionindustries.com';
 const BY_ID = new Map(catalog.filter(i => typeof i.price === 'number').map(i => [i.id, i]));
 const COUNTRIES = ['US','CA','MX','GT','SV','HN','NI','CR','PA','CO','VE','EC','PE','BO','CL','AR','UY','PY','BR','DO','PR','JM','TT','BS','BB','AW','CW','ES','PT','GB','FR','DE','IT','NL','BE','CH','AT','IE','SE','NO','DK','FI','PL','AU','NZ','JP','KR','SG','AE','IL','ZA'];
 const MAX_LINES = 50;
+const BRANDING = { display_name: 'Cognition Industries', background_color: '#ffffff', button_color: '#0066ff', border_style: 'rectangular', logo: { type: 'url', url: 'https://cognitionindustries.com/simbolo-cognition.png' }, icon: { type: 'url', url: 'https://cognitionindustries.com/simbolo-cognition.png' } };
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
 
@@ -57,6 +58,7 @@ async function createCheckout(request, env) {
     success_url: `${SITE}/compra-confirmada?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${SITE}/?compra=cancelada#repuestos`,
     locale: 'es',
+    branding_settings: BRANDING,
     line_items: Object.fromEntries(lines.map(({ part, qty }, i) => [i, {
       quantity: qty,
       adjustable_quantity: { enabled: true, minimum: 1, maximum: 99 },
@@ -79,7 +81,7 @@ async function createCheckout(request, env) {
       enabled: true,
       invoice_data: {
         description: 'Compra en cognitionindustries.com – Cognition Industries LLC',
-        footer: 'Cognition Industries LLC · 30 N Gould St Ste N, Sheridan, WY 82801, EE. UU. · WhatsApp +1 754 300 6570 · Gracias por tu compra.',
+        footer: 'Cognition Industries LLC · 30 N Gould St Ste N, Sheridan, WY 82801, EE. UU. · Soporte: orders@cognitionindustries.com · WhatsApp +1 754 300 6570 · La dirección de envío aparece en tu recibo y en la página de confirmación. Gracias por tu compra.',
         metadata: { source: 'cognition-repuestos' },
       },
     },
@@ -125,6 +127,9 @@ async function sessionSummary(url, env) {
     items: (s.line_items?.data || []).map(l => ({ name: l.description, qty: l.quantity, amount: l.amount_total })),
     has_physical: !!s.shipping_address_collection,
     email: maskEmail(s.customer_details?.email || s.customer_email),
+    // Dirección de envío: solo para el comprador que tiene el enlace de su propia sesión.
+    shipping: (() => { const sd = s.collected_information?.shipping_details || s.shipping_details; if (!sd?.address) return null; const a = sd.address; return { name: sd.name, lines: [a.line1, a.line2, [a.postal_code, a.city].filter(Boolean).join(' '), [a.state, a.country].filter(Boolean).join(', ')].filter(Boolean) }; })(),
+    support_email: 'orders@cognitionindustries.com',
     created: s.created,
   });
 }

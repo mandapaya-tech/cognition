@@ -114,6 +114,12 @@ export async function stripeWebhook(request, env) {
       const u = await stripe(env, 'POST', `payment_intents/${o.payment_intent}`, { receipt_email: email }, `receipt-${ev.id}`);
       if (!u.ok) { console.log('receipt_email_error', u.data?.error?.code); return json({ error: 'retry' }, 500); }
     }
+    // Guardar la dirección de envío en el cliente de Stripe (futuras facturas y soporte).
+    const sd = o.collected_information?.shipping_details || o.shipping_details;
+    if (o.customer && sd?.address) {
+      const c = await stripe(env, 'POST', `customers/${o.customer}`, { shipping: { name: sd.name || 'Cliente', address: sd.address, phone: o.customer_details?.phone || undefined } }, `ship-${ev.id}`);
+      if (!c.ok) console.log('customer_shipping_error', c.data?.error?.code);
+    }
     return json({ received: true, receipt: !!email });
   }
   let meta = o.metadata || {}, amount = null, currency = null, status = null, name = null;

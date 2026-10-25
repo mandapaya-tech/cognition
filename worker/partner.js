@@ -83,6 +83,7 @@ export async function partnerCheckout(request, env) {
     line_items: { 0: { price: env[`GC_PRICE_${amount}`], quantity: 1 } },
     success_url: b.success_url, cancel_url: b.cancel_url,
     metadata: meta, payment_intent_data: { metadata: meta },
+    adaptive_pricing: { enabled: false },
     expires_at: Math.floor(Date.now() / 1000) + 3600,
   }, `gcp-${ext}-${internal_id}`);
   if (!s.ok) { console.log('partner_stripe_error', s.data?.error?.code, s.data?.error?.message); return json({ error: 'stripe_error' }, 502); }

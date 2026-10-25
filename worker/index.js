@@ -119,7 +119,19 @@ async function sessionSummary(url, env) {
   const r = await fetch(`https://api.stripe.com/v1/checkout/sessions/${id}?expand[]=line_items`, { headers: { authorization: `Bearer ${env.STRIPE_SECRET_KEY}` } });
   if (!r.ok) return json({ error: 'not_found' }, 404);
   const s = await r.json();
-  if (s.metadata?.source !== 'cognition-repuestos') return json({ error: 'not_found' }, 404);
+  const isGc = /^gc_[A-Za-z0-9]{6,40}$/.test(String(s.metadata?.internal_id || ''));
+  if (s.metadata?.source !== 'cognition-repuestos' && !isGc) return json({ error: 'not_found' }, 404);
+  if (isGc) return json({
+    order_ref: 'CI-' + id.slice(-8).toUpperCase(),
+    status: s.status, payment_status: s.payment_status, currency: s.currency,
+    amount_subtotal: s.amount_subtotal, amount_tax: s.total_details?.amount_tax ?? 0, amount_shipping: 0, amount_total: s.amount_total,
+    items: [{ name: 'Gift Card US$' + Math.round((s.amount_subtotal || 0) / 100), qty: 1, amount: s.amount_subtotal }],
+    has_physical: false, digital: true, shipping: null,
+    email: maskEmail(s.customer_details?.email || s.customer_email),
+    next_steps: ['Tu gift card se entrega por el canal donde hiciste la compra.', 'Es un producto digital: no requiere envío.'],
+    support_email: 'orders@cognitionindustries.com',
+    created: s.created,
+  });
   return json({
     order_ref: 'CI-' + id.slice(-8).toUpperCase(),
     status: s.status, payment_status: s.payment_status, currency: s.currency,

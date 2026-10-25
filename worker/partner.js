@@ -64,7 +64,11 @@ export async function partnerCheckout(request, env) {
   if (!/^[A-Za-z0-9._:-]{1,100}$/.test(ext)) return json({ error: 'invalid_external_order_id' }, 400);
   const email = String(b.buyer_email || '');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) return json({ error: 'invalid_buyer_email' }, 400);
-  if (!allowedUrl(b.success_url) || !allowedUrl(b.cancel_url)) return json({ error: 'url_not_allowed' }, 400);
+  // success_url / cancel_url opcionales: si se omiten, el comprador vuelve a las páginas de Cognition.
+  if (b.success_url == null || b.success_url === '') b.success_url = 'https://cognitionindustries.com/compra-confirmada?session_id={CHECKOUT_SESSION_ID}';
+  else if (!allowedUrl(b.success_url)) return json({ error: 'url_not_allowed' }, 400);
+  if (b.cancel_url == null || b.cancel_url === '') b.cancel_url = 'https://cognitionindustries.com/compra-cancelada?session_id={CHECKOUT_SESSION_ID}';
+  else if (!allowedUrl(b.cancel_url)) return json({ error: 'url_not_allowed' }, 400);
 
   const h = hub(env);
   const prev = await (await h.fetch('https://hub/order/get', { method: 'POST', body: JSON.stringify({ ext }) })).json();

@@ -10,7 +10,7 @@
     // Gift cards: un solo juego de productos Stripe "Gift Card Services US$N" (sitio y socio).
     "PARTNER_ID": "p01",
     "GC_PRICE_50": "price_1UQloADtcYGFLbuP6mb7PX3i",
-    "GC_PRICE_75": "price_1UV8W2DtcYGFLbuPUoVJITaw",
+    "GC_PRICE_75": "price_1URKi6DtcYGFLbuPirLP2v61",
     "GC_PRICE_100": "price_1UQloBDtcYGFLbuPo6kmXpFi",
     "GC_PRICE_200": "price_1UV8PvDtcYGFLbuPWRNdZXZC",
     "GC_PRICE_300": "price_1UV8PwDtcYGFLbuPIkilP8PO",

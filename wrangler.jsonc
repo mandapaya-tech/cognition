@@ -7,13 +7,14 @@
   "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": ["/api/*"] },
   "observability": { "enabled": true, "logs": { "enabled": true, "invocation_logs": true } },
   "vars": {
+    // Gift cards: un solo juego de productos Stripe "Gift Card Services US$N" (sitio y socio).
     "PARTNER_ID": "p01",
-    "GC_PRICE_50": "price_1URKi5DtcYGFLbuPVV4wOB5l",
-    "GC_PRICE_75": "price_1URKi6DtcYGFLbuPirLP2v61",
-    "GC_PRICE_100": "price_1URKi7DtcYGFLbuPvuaQVZwn",
-    "GC_PRICE_200": "price_1UV8PwDtcYGFLbuPfZG6j2la",
-    "GC_PRICE_300": "price_1UV8PwDtcYGFLbuPI0CcXIXk",
-    "GC_PRICE_500": "price_1UV8PxDtcYGFLbuPJpRBdFZw"
+    "GC_PRICE_50": "price_1UQloADtcYGFLbuP6mb7PX3i",
+    "GC_PRICE_75": "price_1UV8W2DtcYGFLbuPUoVJITaw",
+    "GC_PRICE_100": "price_1UQloBDtcYGFLbuPo6kmXpFi",
+    "GC_PRICE_200": "price_1UV8PvDtcYGFLbuPWRNdZXZC",
+    "GC_PRICE_300": "price_1UV8PwDtcYGFLbuPIkilP8PO",
+    "GC_PRICE_500": "price_1UV8PxDtcYGFLbuPD4p5BqE7"
   },
   "durable_objects": { "bindings": [{ "name": "PARTNER_HUB", "class_name": "PartnerHub" }] },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["PartnerHub"] }]

@@ -10,7 +10,10 @@
     "PARTNER_ID": "p01",
     "GC_PRICE_50": "price_1URKi5DtcYGFLbuPVV4wOB5l",
     "GC_PRICE_75": "price_1URKi6DtcYGFLbuPirLP2v61",
-    "GC_PRICE_100": "price_1URKi7DtcYGFLbuPvuaQVZwn"
+    "GC_PRICE_100": "price_1URKi7DtcYGFLbuPvuaQVZwn",
+    "GC_PRICE_200": "price_1UV8PwDtcYGFLbuPfZG6j2la",
+    "GC_PRICE_300": "price_1UV8PwDtcYGFLbuPI0CcXIXk",
+    "GC_PRICE_500": "price_1UV8PxDtcYGFLbuPJpRBdFZw"
   },
   "durable_objects": { "bindings": [{ "name": "PARTNER_HUB", "class_name": "PartnerHub" }] },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["PartnerHub"] }]

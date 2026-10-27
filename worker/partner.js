@@ -2,7 +2,8 @@
 // Auth HMAC-SHA256: firma = hex(HMAC(secret, timestamp + '.' + rawBody)), ventana 5 min.
 
 const enc = new TextEncoder();
-const AMOUNTS = { 50: 'gcp-50', 75: 'gcp-75', 100: 'gcp-100' };
+const AMOUNTS = { 50: 'gcp-50', 75: 'gcp-75', 100: 'gcp-100', 200: 'gcp-200', 300: 'gcp-300', 500: 'gcp-500' };
+const ALLOWED = Object.keys(AMOUNTS).map(Number);
 const WINDOW_S = 300;
 const BACKOFF_S = [30, 120, 600, 1800, 7200, 21600, 43200, 86400]; // ~2.8 días en total
 
@@ -58,7 +59,11 @@ export async function partnerCheckout(request, env) {
   if (err) return json({ error: 'unauthorized' }, err === 'no_config' ? 503 : 401);
   let b; try { b = JSON.parse(raw); } catch { return json({ error: 'invalid_json' }, 400); }
   const amount = Number(b.amount);
-  if (!AMOUNTS[amount]) return json({ error: 'invalid_amount', allowed: [50, 75, 100] }, 400);
+  if (!AMOUNTS[amount]) return json({ error: 'invalid_amount', allowed: ALLOWED }, 400);
+  // sku opcional: si viene debe ser gcp-<amount>.
+  if (b.sku != null && b.sku !== '' && String(b.sku) !== AMOUNTS[amount]) return json({ error: 'sku_mismatch', expected: AMOUNTS[amount] }, 400);
+  const price = env[`GC_PRICE_${amount}`];
+  if (!price) return json({ error: 'amount_not_configured', amount }, 503);
   if (String(b.currency || '').toLowerCase() !== 'usd') return json({ error: 'invalid_currency' }, 400);
   const ext = String(b.external_order_id || '');
   if (!/^[A-Za-z0-9._:-]{1,100}$/.test(ext)) return json({ error: 'invalid_external_order_id' }, 400);
@@ -84,7 +89,7 @@ export async function partnerCheckout(request, env) {
     mode: 'payment',
     customer_email: email,
     customer_creation: 'always',
-    line_items: { 0: { price: env[`GC_PRICE_${amount}`], quantity: 1 } },
+    line_items: { 0: { price, quantity: 1 } },
     success_url: b.success_url, cancel_url: b.cancel_url,
     metadata: meta, payment_intent_data: { metadata: meta },
     adaptive_pricing: { enabled: false },
